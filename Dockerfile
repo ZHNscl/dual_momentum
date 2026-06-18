@@ -9,10 +9,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY requirements.txt .
+# 先复制依赖文件并安装（利用 Docker 缓存层）
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# 复制全部项目文件
+COPY . ./
 
-EXPOSE 10000
-CMD ["sh", "-c", "python dashboard.py --host 0.0.0.0 --port ${PORT:-10000}"]
+# 创建运行时需要的目录
+RUN mkdir -p output/cache
+
+# Render 通过 PORT 环境变量分配端口
+ENV PORT=10000
+EXPOSE $PORT
+
+CMD ["sh", "-c", "python dashboard.py --host 0.0.0.0 --port ${PORT}"]
