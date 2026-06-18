@@ -13,10 +13,11 @@
 |------|--------|
 | Name | `dual-momentum`（随便填） |
 | Build Command | `pip install -r requirements.txt` |
-| Start Command | `python dashboard.py --host 0.0.0.0 --port 10000` |
+| Start Command | 留空（自动用 Procfile）或填 `python dashboard.py --host 0.0.0.0 --port $PORT` |
 
 5. 选 **Free** 计划 → 点 **Create Web Service**
-6. 等 2-3 分钟，部署完成后你会得到一个网址：
+6. ⚠️ 关键：**Branch 必须是 `main`**，**Root Directory 留空**（不要填子目录），Start Command 留空让它用 Procfile
+7. 等 2-3 分钟，部署完成后你会得到一个网址：
    ```
    https://dual-momentum.onrender.com
    ```
