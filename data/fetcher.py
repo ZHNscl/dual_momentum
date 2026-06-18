@@ -1,12 +1,17 @@
 """
-数据获取模块 - 基于 akshare 获取 A 股 ETF 日线数据
+数据获取模块 - 基于 akshare 获取 A股 ETF 日线数据
 支持本地 CSV 缓存，避免重复 API 调用
+在境外服务器（如 Render）无法访问数据源时自动使用模拟数据
 """
 
 import os
 import time
 import pandas as pd
-import akshare as ak
+try:
+    import akshare as ak
+    AKSHARE_OK = True
+except Exception:
+    AKSHARE_OK = False
 
 from config import ETF_POOL, BENCHMARK, CACHE_DIR, START_DATE, END_DATE
 
@@ -37,19 +42,21 @@ def fetch_etf_daily(code: str, start_date: str = "20100101", end_date: str = Non
 
     cache_file = _cache_path(code)
 
-    # 全量拉取（新浪接口返回所有历史数据）
     if not use_cache or not os.path.exists(cache_file):
-        for attempt in range(3):
-            try:
-                df = _fetch_from_sina(code)
-                if not df.empty:
-                    if use_cache:
-                        df.to_csv(cache_file, index=False)
-                    return df
-            except Exception as e:
-                print(f"  [重试 {attempt+1}/3] 获取 {code} 失败: {e}")
-                if attempt < 2:
-                    time.sleep(2)
+        if not AKSHARE_OK:
+            print(f"  [离线模式] akshare 不可用，跳过 {code}")
+        else:
+            for attempt in range(3):
+                try:
+                    df = _fetch_from_sina(code)
+                    if not df.empty:
+                        if use_cache:
+                            df.to_csv(cache_file, index=False)
+                        return df
+                except Exception as e:
+                    print(f"  [重试 {attempt+1}/3] 获取 {code} 失败: {e}")
+                    if attempt < 2:
+                        time.sleep(2)
 
         print(f"  [警告] 无法获取 {code} 数据，将使用缓存或返回空数据")
         if os.path.exists(cache_file):
@@ -171,7 +178,14 @@ def build_unified_dataframe(etf_codes: list = None,
             price_dict[code] = df.set_index("date")["close"]
 
     if not price_dict:
-        raise RuntimeError("未能获取任何 ETF 数据！请检查网络和 akshare 版本")
+        # 所有 ETF 数据拉取失败，自动切换到离线模拟数据
+        print("\n⚠️  实时数据获取失败，自动切换到离线演示模式（模拟数据）")
+        try:
+            from data.mock_data import build_mock_dataframe
+            mock_result = build_mock_dataframe(etf_codes, start_date, end_date)
+            return mock_result
+        except Exception as mock_err:
+            raise RuntimeError(f"未能获取任何 ETF 数据！请检查网络和 akshare 版本。mock_error={mock_err}")
 
     # 构建收盘价矩阵
     price_df = pd.DataFrame(price_dict).sort_index()
