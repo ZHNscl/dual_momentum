@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+
+# 运行时生成的缓存/输出（代码会在运行时自动创建目录）
+output/cache/
+output/*.csv
+output/*.png
+output/*.json
+
+# 运行时ETF池配置（用户在界面上修改会写入此文件，部署时不需要带）
+etf_pool.json
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# 系统/编辑器
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
